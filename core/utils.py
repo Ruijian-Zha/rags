@@ -45,7 +45,10 @@ from llama_index.chat_engine.types import (
 )
 from llama_index.llms.base import ChatResponse
 from typing import Generator
-
+import uuid
+from core.crawling_helper import crawling_helper
+from typing import List
+import shutil
 
 class RAGParams(BaseModel):
     """RAG parameters.
@@ -122,11 +125,38 @@ def load_data(
         reader = SimpleDirectoryReader(input_dir=directory)
         docs = reader.load_data()
     elif urls:
-        from llama_hub.web.simple_web.base import SimpleWebPageReader
+        # from llama_hub.web.simple_web.base import SimpleWebPageReader
 
-        # use simple web page reader from llamahub
-        loader = SimpleWebPageReader()
-        docs = loader.load_data(urls=urls)
+        # # use simple web page reader from llamahub
+        # loader = SimpleWebPageReader()
+        # docs = loader.load_data(urls=urls)
+        base_output_directory = "E:\\Github\\GitKraken\\llamaindex_rags\\dataset\\webs"
+        final_output_directory = "E:\\Github\\GitKraken\\llamaindex_rags\\dataset\\webs"
+        # docs = []
+
+        # Ensure the base output directory exists
+        os.makedirs(base_output_directory, exist_ok=True)
+
+        random_id = str(uuid.uuid4())
+        # Crawl each URL and save the output in a unique directory
+        for url in urls:
+            # Generate a unique directory for this URL
+
+            output_directory = os.path.join(base_output_directory, random_id)
+
+            # Create the unique directory
+            os.makedirs(output_directory, exist_ok=True)
+
+            # Crawl the URL and save the output in the unique directory
+            crawling_helper(url, output_directory)
+
+        # After crawling all URLs, use SimpleDirectoryReader to read the documents from the base directory
+        reader = SimpleDirectoryReader(input_dir=final_output_directory+"\\"+random_id+"\\separated_output")
+        docs = reader.load_data()
+
+        # Delete the base output directory to clean up
+        shutil.rmtree(base_output_directory)
+
     else:
         raise ValueError("Must specify either file_names or urls or directory.")
 
